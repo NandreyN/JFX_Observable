@@ -10,6 +10,7 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.ListView;
 import javafx.scene.control.TextField;
+import javafx.scene.input.KeyCode;
 import javafx.scene.layout.HBox;
 import javafx.scene.text.Font;
 import javafx.stage.Stage;
@@ -23,22 +24,22 @@ public class Main extends Application {
 
     private static int WIDTH = 600;
     private static int HEIGHT = 400;
-
-    private ObservableList<String> logList = FXCollections.observableArrayList();
-    private SimpleStringProperty currentLetter = new SimpleStringProperty("");
-
-    private Calendar calendar = new GregorianCalendar();
+    private ObserverTextField obsTextField;
+    private CustomObservableString obsString = new CustomObservableString();
+    private CustomObservableListView obsListView = new CustomObservableListView();
 
     @Override
     public void start(Stage primaryStage) throws Exception {
+        obsString.setContent("");
+
         HBox hBox = new HBox();
-        ListView<String> listView = new ListView<>();
-        configureListView(listView);
+        obsListView = new CustomObservableListView();
+        configureListView();
 
-        TextField textField = new TextField();
-        configureTextBox(textField);
+        obsTextField = new ObserverTextField();
+        configureTextBox();
 
-        hBox.getChildren().addAll(textField, listView);
+        hBox.getChildren().addAll(obsTextField, obsListView);
 
         Scene scene = new Scene(hBox, WIDTH, HEIGHT);
         setupWindowKeyListener(scene);
@@ -48,25 +49,31 @@ public class Main extends Application {
         primaryStage.show();
     }
 
-    private void configureListView(ListView<String> listView) {
-        listView.setItems(logList);
-        listView.setPrefHeight(HEIGHT / 5);
-        listView.setPrefWidth(WIDTH);
+    private void configureListView() {
+        obsListView.setPrefHeight(HEIGHT / 5);
+        obsListView.setPrefWidth(WIDTH);
+        obsString.addObserver(obsListView);
     }
 
-    private void configureTextBox(TextField textField) {
-        textField.setPrefHeight(HEIGHT);
-        textField.setPrefWidth(WIDTH);
-        textField.textProperty().bind(currentLetter);
-        textField.setEditable(false);
-        textField.setFont(new Font(100));
-        textField.setAlignment(Pos.CENTER);
+    private void configureTextBox() {
+        obsTextField.setPrefHeight(HEIGHT);
+        obsTextField.setPrefWidth(WIDTH);
+
+        obsString.addObserver(obsTextField);
+
+        obsTextField.setEditable(false);
+        obsTextField.setFont(new Font(100));
+        obsTextField.setAlignment(Pos.CENTER);
     }
 
     private void setupWindowKeyListener(Scene scene) {
         scene.setOnKeyReleased((event) -> {
-            currentLetter.setValue(event.getText());
-            logList.add(LocalDateTime.now() + " , value : " + event.getText());
+            KeyCode keycode = event.getCode();
+            if (keycode.isLetterKey() || keycode.isDigitKey()) {
+                String msg = (event.isShiftDown()) ? event.getText().toUpperCase() : event.getText().toLowerCase();
+
+                obsString.setContent(msg);
+            }
         });
     }
 
